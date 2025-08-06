@@ -9,6 +9,9 @@ jobs:
 
   deploy-to-server:
     runs-on: ubuntu-latest
+
+    environment: study-secrets
+    
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
