@@ -1,0 +1,54 @@
+name: Build, Deploy and Restart Spring Boot App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  deploy-to-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+
+          script: |
+            # 1. Cria ou sobrescreve o arquivo de ambiente no servidor.
+            # Este arquivo conterá os segredos para a aplicação Spring Boot.
+            # Usamos '>' no primeiro echo para criar/limpar o arquivo, e '>>' nos seguintes para adicionar linhas.
+            echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" > /home/${{ secrets.USERNAME }}/prod.env
+            
+            # Mapeia o secret MINIO_ACCESS_KEY para a variável que o Spring espera (AWS_S3_ACCESS_KEY)
+            echo "AWS_S3_ACCESS_KEY=${{ secrets.MINIO_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
+            
+            # Mapeia o secret MINIO_SECRET_KEY para a variável que o Spring espera (AWS_S3_SECRET_KEY)
+            echo "AWS_S3_SECRET_KEY=${{ secrets.MINIO_SECRET_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
+
+            # 2. Copia o arquivo .jar recém-construído para o servidor.
+            # O 'target/*.jar' pega o primeiro arquivo .jar encontrado na pasta 'target'.
+            # O nome do arquivo no servidor será 'sua-app.jar' (ajuste se necessário).
+            scp -o StrictHostKeyChecking=no target/*.jar ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/${{ secrets.USERNAME }}/sua-app.jar
+
+            # 3. Executa um comando SSH aninhado para reiniciar o serviço systemd.
+            # O serviço 'spring-app.service' lerá o arquivo 'prod.env' para obter as configurações.
+            ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.HOST }} "sudo systemctl restart spring-app.service"
