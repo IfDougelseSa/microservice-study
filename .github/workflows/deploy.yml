@@ -24,7 +24,6 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml -DskipTests
 
-      # Passo 4.1: Copiar o arquivo .jar para o servidor
       - name: Copy JAR to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -32,10 +31,9 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: "target/*.jar" # O arquivo a ser copiado
-          target: "/home/${{ secrets.USERNAME }}/" # O destino no servidor
+          source: "target/studies-0.0.1-SNAPSHOT.jar"
+          target: "/home/${{ secrets.USERNAME }}/app.jar"
 
-      # Passo 4.2: Criar o .env e Reiniciar o Serviço
       - name: Create .env and Restart Service
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -44,14 +42,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            # 1. Renomeia o JAR para um nome fixo
-            # Isso torna o arquivo systemd mais simples
             mv /home/${{ secrets.USERNAME }}/*.jar /home/${{ secrets.USERNAME }}/sua-app.jar
 
-            # 2. Cria o arquivo de ambiente
             echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" > /home/${{ secrets.USERNAME }}/prod.env
             echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
             echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
-
-            # 3. Reinicia o serviço
             sudo systemctl restart spring-app.service
