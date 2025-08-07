@@ -24,17 +24,23 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml -DskipTests
 
-      - name: Copy JAR to Server
+      - name: Rename Artifact for Consistent Deployment
+        run: mv target/*.jar target/app.jar
+        shell: bash
+
+      - name: Copy Artifact to Server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: "target/*.jar"
+          source: "target/app.jar"
           target: "/home/${{ secrets.USERNAME }}/"
+          overwrite: true
 
-      - name: Deploy and Restart
+
+      - name: Deploy and Restart Application
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -42,10 +48,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            LATEST_JAR=$(ls -t /home/${{ secrets.USERNAME }}/*.jar | head -n 1)
-            mv "$LATEST_JAR" /home/${{ secrets.USERNAME }}/app.jar
-
             echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" > /home/${{ secrets.USERNAME }}/prod.env
             echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
             echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
+            sudo chown ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} /home/${{ secrets.USERNAME }}/app.jar /home/${{ secrets.USERNAME }}/prod.env
             sudo systemctl restart spring-app.service
