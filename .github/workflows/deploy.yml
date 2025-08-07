@@ -31,7 +31,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: "target/studies-0.0.1-SNAPSHOT.jar"
+          source: "target/*.jar"
           target: "/home/${{ secrets.USERNAME }}/app.jar"
 
       - name: Create .env and Restart Service
@@ -42,9 +42,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            mv /home/${{ secrets.USERNAME }}/*.jar /home/${{ secrets.USERNAME }}/sua-app.jar
+            # A linha 'mv' foi REMOVIDA, pois não é mais necessária.
 
+            # Cria o arquivo de ambiente com os valores dos secrets do GitHub
             echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" > /home/${{ secrets.USERNAME }}/prod.env
+            
+            # CORRIGIDO: Usa os nomes corretos dos secrets do GitHub (MINIO_...)
             echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
-            echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
+            echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
+            
+            # Reinicia o serviço, que agora encontrará o 'app.jar'
             sudo systemctl restart spring-app.service
