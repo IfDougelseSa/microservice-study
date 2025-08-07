@@ -47,5 +47,5 @@ jobs:
 
             echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" > /home/${{ secrets.USERNAME }}/prod.env
             echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
-            echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
+            echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" >> /home/${{ secrets.USERNAME }}/prod.env
             sudo systemctl restart spring-app.service
