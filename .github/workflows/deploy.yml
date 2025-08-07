@@ -48,20 +48,29 @@ jobs:
           port: 22
           script: |
             APP_HOME="/home/${{ secrets.USERNAME }}"
-            SOURCE_PATH=$(find $APP_HOME -name "app.jar" | head -n 1)
-            
-            if [ -n "$SOURCE_PATH" ]; then
-              echo "Artefato encontrado em $SOURCE_PATH. Movendo para $APP_HOME/app.jar"
-              mv "$SOURCE_PATH" "$APP_HOME/app.jar"
-            else
-              echo "ERRO: Nenhum app.jar encontrado no servidor."
-              exit 1
-            fi
+            ENV_FILE_PATH="/etc/default/spring-app"
 
-            echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" > $APP_HOME/prod.env
-            echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" >> $APP_HOME/prod.env
-            echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" >> $APP_HOME/prod.env
-            sudo chown ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} $APP_HOME/app.jar $APP_HOME/prod.env
+            echo "Garantindo a posse do artefato para o usuário deployer..."
+            sudo chown ${{ secrets.USERNAME }}:${{ secrets.USERNAME }} $APP_HOME/app.jar
+
+            echo "Criando/Atualizando o arquivo de ambiente em $ENV_FILE_PATH..."
+            echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" | sudo tee $ENV_FILE_PATH > /dev/null
+            echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" | sudo tee -a $ENV_FILE_PATH > /dev/null
+            echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" | sudo tee -a $ENV_FILE_PATH > /dev/null
             
+            
+            echo "Ajustando permissões do arquivo de ambiente..."
+            sudo chmod 644 $ENV_FILE_PATH
+            
+           
+            echo "Recarregando o daemon do systemd..."
+            sudo systemctl daemon-reload
+
+
             echo "Reiniciando o serviço spring-app..."
             sudo systemctl restart spring-app.service
+
+            sleep 5
+            echo "Verificando o status do serviço..."
+            sudo systemctl status spring-app.service --no-pager || echo "Falha ao verificar o status, mas o deploy continuou."
+
