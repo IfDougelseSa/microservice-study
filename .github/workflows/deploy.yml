@@ -57,6 +57,8 @@ jobs:
             echo "SPRING_DATA_MONGODB_URI=${{ secrets.MONGO_URI }}" | sudo tee $ENV_FILE_PATH > /dev/null
             echo "AWS_S3_ACCESS_KEY=${{ secrets.AWS_S3_ACCESS_KEY }}" | sudo tee -a $ENV_FILE_PATH > /dev/null
             echo "AWS_S3_SECRET_KEY=${{ secrets.AWS_S3_SECRET_KEY }}" | sudo tee -a $ENV_FILE_PATH > /dev/null
+            echo "MINIO_ENDPOINT=${{ secrets.MINIO_ENDPOINT }}" | sudo tee -a $ENV_FILE_PATH > /dev/null
+            echo "CORS_PROD=${{ secrets.CORS_PROD }}" | sudo tee -a $ENV_FILE_PATH > /dev/null
             
             
             echo "Ajustando permissões do arquivo de ambiente..."

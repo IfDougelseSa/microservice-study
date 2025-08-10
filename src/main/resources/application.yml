@@ -13,13 +13,10 @@ logging:
   level:
     org.springframework.data.mongodb.core.MongoTemplate: DEBUG
 
-# src/main/resources/application.yml
-
-# --- Configuração do MinIO (S3 Compatível) ---
 aws:
   s3:
 
-    endpoint: http://192.168.0.50:9000
+    endpoint: ${MINIO_ENDPOINT}
 
     access-key: ${AWS_S3_ACCESS_KEY}
     secret-key: ${AWS_S3_SECRET_KEY}
@@ -30,3 +27,8 @@ aws:
 
     path-style-access-enabled: true
 
+
+cors:
+  shell-app-local: http://localhost:4200
+  mfe-study-local: http://localhost:4201
+  prod: ${CORS_PROD}
